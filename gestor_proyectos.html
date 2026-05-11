@@ -3,644 +3,674 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestor de Proyectos — Gantt + Ruta Crítica</title>
+<title>Gestor de Proyectos</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeece8;
-    --text: #1a1a18; --text2: #6b6a64; --text3: #9c9a92;
-    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
-    --info-bg: #e6f1fb; --info-text: #185fa5; --info-border: #b5d4f4;
-    --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: #f7c1c1;
-    --success-bg: #eaf3de; --success-text: #3b6d11;
-    --radius: 8px; --radius-lg: 12px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --mono: 'Menlo', 'Consolas', monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #323230;
-      --text: #e8e6de; --text2: #9c9a92; --text3: #6b6a64;
-      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
-      --info-bg: #0c447c; --info-text: #b5d4f4; --info-border: #185fa5;
-      --danger-bg: #501313; --danger-text: #f7c1c1; --danger-border: #a32d2d;
-      --success-bg: #173404; --success-text: #c0dd97;
-    }
-  }
-  body { font-family: var(--font); color: var(--text); background: var(--bg3); min-height: 100vh; }
-  .page { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
-  .page-title { font-size: 20px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-  .page-title span { font-size: 13px; font-weight: 400; color: var(--text2); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#eceae6;
+  --text:#1a1a18;--text2:#6b6a64;--text3:#9c9a92;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --info-bg:#e6f1fb;--info-text:#185fa5;--info-border:#b5d4f4;
+  --danger-bg:#fcebeb;--danger-text:#a32d2d;
+  --warn-bg:#faeeda;--warn-text:#633806;
+  --success-bg:#eaf3de;--success-text:#3b6d11;
+  --rc:#B03A2E;--rc-bg:#FCF0EF;--rc-border:#F0B8B5;
+  --r:8px;--rl:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'Menlo','Consolas',monospace;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#2a2a28;--bg3:#323230;
+  --text:#e8e6de;--text2:#9c9a92;--text3:#6b6a64;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --info-bg:#0c447c;--info-text:#b5d4f4;--info-border:#185fa5;
+  --danger-bg:#501313;--danger-text:#f7c1c1;
+  --warn-bg:#412402;--warn-text:#FAC775;
+  --success-bg:#173404;--success-text:#c0dd97;
+  --rc-bg:#3d1010;--rc-border:#7a2020;
+}}
+body{font-family:var(--font);color:var(--text);background:var(--bg3);min-height:100vh;}
+.page{max-width:1100px;margin:0 auto;padding:20px 16px;}
+h1{font-size:20px;font-weight:500;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+h1 span{font-size:13px;font-weight:400;color:var(--text2);}
 
-  /* Cards */
-  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.btn{font-family:var(--font);font-size:13px;border:0.5px solid var(--border2);border-radius:var(--r);padding:6px 13px;cursor:pointer;background:var(--bg);color:var(--text);transition:background .15s;}
+.btn:hover{background:var(--bg2);}
+.btn.primary{background:var(--info-bg);color:var(--info-text);border-color:transparent;}
+.btn.danger{background:var(--danger-bg);color:var(--danger-text);border-color:transparent;}
+.btn.warn{background:var(--warn-bg);color:var(--warn-text);border-color:transparent;}
+.btn.sm{font-size:12px;padding:4px 9px;}
 
-  /* Buttons */
-  .btn { font-family: var(--font); font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 7px 14px; cursor: pointer; background: var(--bg); color: var(--text); transition: background 0.15s; }
-  .btn:hover { background: var(--bg2); }
-  .btn.primary { background: var(--info-bg); color: var(--info-text); border-color: transparent; }
-  .btn.primary:hover { opacity: 0.88; }
-  .btn.danger { background: var(--danger-bg); color: var(--danger-text); border-color: transparent; }
-  .btn.small { font-size: 12px; padding: 5px 10px; }
+input,select,textarea{font-family:var(--font);font-size:13px;border:0.5px solid var(--border2);border-radius:var(--r);padding:7px 10px;background:var(--bg);color:var(--text);outline:none;width:100%;}
+input:focus,select:focus{border-color:var(--info-text);box-shadow:0 0 0 2px var(--info-bg);}
 
-  /* Inputs */
-  input, select, textarea { font-family: var(--font); font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 10px; background: var(--bg); color: var(--text); outline: none; }
-  input:focus, select:focus { border-color: var(--info-text); box-shadow: 0 0 0 2px var(--info-bg); }
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:14px;}
 
-  /* Status bar */
-  .status-bar { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text2); background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; margin-bottom: 14px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .dot.green { background: #1D9E75; }
-  .dot.yellow { background: #BA7517; animation: pulse 1s infinite; }
-  .dot.red { background: #D85A30; }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+/* Status */
+.statusbar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 14px;margin-bottom:14px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot.g{background:#1D9E75;}.dot.y{background:#BA7517;animation:pulse 1s infinite;}.dot.r{background:#D85A30;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* Summary metrics */
-  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-  .metric { background: var(--bg2); border-radius: var(--radius); padding: 10px 16px; flex: 1; min-width: 90px; }
-  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
-  .metric-value { font-size: 22px; font-weight: 500; }
+/* Metrics */
+.metrics{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.metric{background:var(--bg2);border-radius:var(--r);padding:10px 14px;flex:1;min-width:80px;}
+.metric-lbl{font-size:11px;color:var(--text2);margin-bottom:3px;}
+.metric-val{font-size:20px;font-weight:500;}
 
-  /* Tabs */
-  .tabs { display: flex; gap: 2px; border-bottom: 0.5px solid var(--border); margin-bottom: 14px; }
-  .tab { font-family: var(--font); font-size: 13px; padding: 8px 18px; cursor: pointer; border: none; background: none; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-  .tab:hover:not(.active) { color: var(--text); }
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--border);margin-bottom:14px;}
+.tab{font-family:var(--font);font-size:13px;padding:7px 16px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500;}
 
-  /* Toolbar */
-  .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+/* Toolbar */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
 
-  /* Gantt */
-  .gantt-wrap { overflow-x: auto; border: 0.5px solid var(--border); border-radius: var(--radius); }
-  .gantt-inner { min-width: 620px; }
-  .gantt-head { display: flex; background: var(--bg2); border-bottom: 0.5px solid var(--border); }
-  .g-label { width: 215px; flex-shrink: 0; font-size: 11px; color: var(--text2); padding: 7px 12px; }
-  .g-weeks { flex: 1; display: flex; }
-  .g-week { flex: 1; text-align: center; font-size: 11px; color: var(--text2); padding: 7px 2px; border-left: 0.5px solid var(--border); }
-  .gantt-row { display: flex; align-items: center; min-height: 34px; border-bottom: 0.5px solid var(--border); }
-  .gantt-row:last-child { border-bottom: none; }
-  .gantt-row.proj-row { background: var(--bg2); cursor: pointer; }
-  .gantt-row.proj-row:hover { background: var(--bg3); }
-  .gantt-row.crit .task-name { color: #B03A2E; }
-  .task-label { width: 215px; flex-shrink: 0; padding: 0 10px; display: flex; align-items: center; gap: 5px; }
-  .task-name { font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .task-pct { font-size: 11px; color: var(--text2); flex-shrink: 0; }
-  .rc-badge { font-size: 10px; background: #FCF0EF; color: #B03A2E; border: 0.5px solid #F0B8B5; padding: 1px 5px; border-radius: 4px; flex-shrink: 0; }
-  .g-bars { flex: 1; position: relative; height: 34px; display: flex; align-items: center; }
-  .g-line { position: absolute; top: 0; bottom: 0; width: 0.5px; background: var(--border); }
-  .g-bar { position: absolute; height: 18px; border-radius: 4px; overflow: hidden; cursor: pointer; transition: opacity 0.15s; }
-  .g-bar:hover { opacity: 0.8; }
-  .g-bar-fill { height: 100%; border-radius: 4px 0 0 4px; }
-  .g-bar.crit { outline: 1.5px solid #B03A2E; outline-offset: 1px; }
-  .proj-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .chevron { font-size: 10px; color: var(--text3); transition: transform 0.18s; }
-  .chevron.open { transform: rotate(90deg); }
+/* Gantt */
+.gantt-scroll{overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--r);}
+.gantt-inner{min-width:700px;}
+.gantt-head{display:flex;background:var(--bg2);border-bottom:0.5px solid var(--border);}
+.gh-lbl{width:230px;flex-shrink:0;font-size:11px;color:var(--text2);padding:6px 10px;border-right:0.5px solid var(--border);}
+.gh-months{flex:1;display:flex;}
+.gh-month{flex:1;text-align:center;font-size:11px;color:var(--text2);padding:6px 2px;border-left:0.5px solid var(--border);}
+.grow{display:flex;align-items:center;min-height:34px;border-bottom:0.5px solid var(--border);}
+.grow:last-child{border-bottom:none;}
+.grow.prow{background:var(--bg2);cursor:pointer;}
+.grow.prow:hover{background:var(--bg3);}
+.grow.crit .tname{color:var(--rc);}
+.tlbl{width:230px;flex-shrink:0;padding:0 8px;display:flex;align-items:center;gap:5px;border-right:0.5px solid var(--border);}
+.tname{font-size:12px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tpct{font-size:11px;color:var(--text2);flex-shrink:0;}
+.rcbadge{font-size:10px;background:var(--rc-bg);color:var(--rc);border:0.5px solid var(--rc-border);padding:1px 4px;border-radius:3px;flex-shrink:0;}
+.gbars{flex:1;position:relative;height:34px;display:flex;align-items:center;}
+.gline{position:absolute;top:0;bottom:0;width:0.5px;background:var(--border);}
+.gbar{position:absolute;height:18px;border-radius:4px;overflow:hidden;cursor:pointer;transition:opacity .15s;}
+.gbar:hover{opacity:.78;}
+.gbar-fill{height:100%;border-radius:4px 0 0 4px;}
+.gbar.isrc{outline:2px solid var(--rc);outline-offset:1px;}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.chev{font-size:10px;color:var(--text3);transition:transform .18s;flex-shrink:0;}
+.chev.open{transform:rotate(90deg);}
+.dep-line{position:absolute;border-left:1.5px dashed var(--rc);top:0;bottom:0;pointer-events:none;}
 
-  /* Projects list */
-  .proj-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; }
-  .proj-card-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-  .proj-card-title { font-size: 14px; font-weight: 500; flex: 1; }
-  .proj-card-meta { font-size: 12px; color: var(--text2); }
-  .prog-bar { height: 4px; background: var(--border); margin: 0 16px 12px; border-radius: 2px; }
-  .prog-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-  .task-rows { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px; }
-  .task-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .task-row input[type=range] { flex: 1; cursor: pointer; }
-  .task-row-pct { min-width: 34px; text-align: right; color: var(--text2); font-size: 11px; }
+/* Project cards */
+.pcards{display:flex;flex-direction:column;gap:10px;}
+.pcard{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.pcard-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;}
+.pcard-title{font-size:14px;font-weight:500;flex:1;}
+.pcard-meta{font-size:11px;color:var(--text2);}
+.pcard-actions{display:flex;gap:6px;}
+.prog{height:4px;background:var(--border);margin:0 14px 10px;border-radius:2px;}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+.tlist{padding:0 14px 12px;display:flex;flex-direction:column;gap:6px;}
+.titem{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 10px;background:var(--bg2);border-radius:var(--r);}
+.titem.isrc{border-left:3px solid var(--rc);}
+.titem-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.titem-info{font-size:11px;color:var(--text2);white-space:nowrap;}
+.range-wrap{display:flex;align-items:center;gap:6px;min-width:120px;}
+.range-wrap input[type=range]{flex:1;cursor:pointer;}
+.range-lbl{min-width:30px;text-align:right;font-size:11px;color:var(--text2);}
 
-  /* Setup */
-  .setup-steps { font-size: 13px; color: var(--text2); padding-left: 20px; line-height: 2.2; margin-bottom: 14px; }
-  .setup-steps b { color: var(--text); font-weight: 500; }
-  code { font-family: var(--mono); font-size: 11px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 4px; padding: 2px 6px; }
-  .script-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: var(--mono); font-size: 11px; line-height: 1.7; white-space: pre-wrap; color: var(--text2); margin-bottom: 10px; position: relative; max-height: 180px; overflow-y: auto; }
-  .input-row { display: flex; gap: 8px; }
-  .input-row input { flex: 1; }
-  .alt-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text2); }
+/* Modal */
+.modal-wrap{display:none;background:rgba(0,0,0,0.45);padding:40px 16px;margin-bottom:16px;border-radius:var(--rl);}
+.modal-wrap.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:22px;width:400px;max-width:100%;}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:16px;}
+.fr{margin-bottom:12px;}
+.fr label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;}
+.frow2{display:flex;gap:10px;}
+.frow2>.fr{flex:1;}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.dep-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;margin-top:4px;}
+.dep-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 8px;background:var(--bg2);border-radius:4px;}
+.dep-item input[type=checkbox]{width:auto;cursor:pointer;}
 
-  /* Modal */
-  .overlay { background: rgba(0,0,0,0.45); display: flex; align-items: flex-start; justify-content: center; padding-top: 40px; min-height: 380px; border-radius: var(--radius-lg); margin-bottom: 16px; }
-  .modal { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 22px; width: 340px; max-width: 95vw; }
-  .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
-  .form-row { margin-bottom: 12px; }
-  .form-row label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-  .form-row input, .form-row select { width: 100%; }
-  .form-half { display: flex; gap: 8px; }
-  .form-half > div { flex: 1; }
-  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-
-  .info-box { background: var(--info-bg); border: 0.5px solid var(--info-border); border-radius: var(--radius); padding: 12px 14px; font-size: 12px; color: var(--info-text); line-height: 1.7; margin-bottom: 14px; }
-  .empty { text-align: center; padding: 32px 20px; color: var(--text2); font-size: 13px; }
+/* Setup */
+.setup-info{background:var(--info-bg);color:var(--info-text);border:0.5px solid var(--info-border);border-radius:var(--r);padding:10px 14px;font-size:12px;line-height:1.6;margin-bottom:12px;}
+.script-box{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre-wrap;color:var(--text2);max-height:160px;overflow-y:auto;margin-bottom:8px;}
+.irow{display:flex;gap:8px;}
+.irow input{flex:1;}
+.empty{text-align:center;padding:28px;color:var(--text2);font-size:13px;}
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="page-title">
-    Gestor de Proyectos
-    <span>Gantt · Ruta Crítica · Colaboración en tiempo real</span>
-  </div>
+<h1>Gestor de Proyectos <span>Gantt · Ruta Crítica Automática · Colaboración en tiempo real</span></h1>
 
-  <!-- SETUP -->
-  <div id="setup-card" class="card">
-    <div class="info-box">
-      <b>¿Cómo funciona la colaboración?</b> Los datos se guardan en tu propio Google Sheet. Tú y tu equipo abren este archivo HTML desde cualquier computadora y ven los cambios al instante. Nadie externo tiene acceso — solo quienes tengan el link de tu hoja.
-    </div>
-    <h3 style="font-size:14px;font-weight:500;margin-bottom:10px">Configurar Google Sheets (solo se hace una vez)</h3>
-    <ol class="setup-steps">
-      <li>Ve a <b>sheets.google.com</b> y crea una hoja nueva</li>
-      <li>Menú: <b>Extensiones → Apps Script</b></li>
-      <li>Borra el código existente y pega el script de abajo</li>
-      <li>Clic en <b>Implementar → Nueva implementación</b><br>
-          Tipo: <b>Aplicación web</b> · Acceso: <b>Cualquier persona</b></li>
-      <li>Copia la URL del despliegue y pégala aquí abajo</li>
-    </ol>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-size:12px;color:var(--text2);font-weight:500">Script para Apps Script:</span>
-      <button class="btn small" onclick="copyScript()">Copiar script</button>
-    </div>
-    <div class="script-box" id="script-content">function doGet(e){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('data') || ss.insertSheet('data');
-  var data = sh.getRange(1,1).getValue();
-  return ContentService.createTextOutput(data || '{}')
-    .setMimeType(ContentService.MimeType.JSON);
+<!-- SETUP -->
+<div id="setup" class="card">
+  <div class="setup-info">Los datos se guardan en tu propio Google Sheet. Solo tú y las personas con acceso pueden verlos.</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <span style="font-size:12px;font-weight:500;color:var(--text2)">Script para Google Apps Script:</span>
+    <button class="btn sm" onclick="copyScript()">Copiar script</button>
+  </div>
+  <div class="script-box" id="scriptbox">function doGet(e){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var sh=ss.getSheetByName('data')||ss.insertSheet('data');
+  var d=sh.getRange(1,1).getValue();
+  return ContentService.createTextOutput(d||'{}').setMimeType(ContentService.MimeType.JSON);
 }
 function doPost(e){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('data') || ss.insertSheet('data');
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var sh=ss.getSheetByName('data')||ss.insertSheet('data');
   sh.getRange(1,1).setValue(e.postData.contents);
   return ContentService.createTextOutput('ok');
 }</div>
-    <div class="input-row" style="margin-top:12px">
-      <input id="sheet-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
-      <button class="btn primary" onclick="connectSheet()">Conectar</button>
-    </div>
-    <div class="alt-row">
-      <span>¿Sin Google?</span>
-      <button class="btn small" onclick="useLocal()">Usar solo en este navegador (sin sincronización)</button>
-    </div>
+  <div class="irow">
+    <input id="gs-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <button class="btn primary" onclick="conectar()">Conectar</button>
+  </div>
+  <div style="margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text2)">
+    <span>¿Sin Google?</span>
+    <button class="btn sm" onclick="modoLocal()">Usar solo local</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="statusbar">
+    <div class="dot" id="sdot"></div>
+    <span id="stxt"></span>
+    <span style="flex:1"></span>
+    <button class="btn sm" onclick="sync()">↻ Sincronizar</button>
+    <button class="btn sm warn" onclick="exportar()">⬇ Exportar</button>
+    <button class="btn sm danger" onclick="desconectar()">Desconectar</button>
   </div>
 
-  <!-- MAIN APP -->
-  <div id="main-app" style="display:none">
-    <div class="status-bar">
-      <div class="dot" id="s-dot"></div>
-      <span id="s-text">Conectando...</span>
-      <span style="flex:1"></span>
-      <button class="btn small" onclick="syncNow()">↻ Sincronizar</button>
-      <button class="btn small" onclick="exportJSON()">⬇ Exportar</button>
-      <button class="btn small danger" onclick="disconnect()">Desconectar</button>
+  <div class="metrics" id="metrics"></div>
+
+  <div class="card" style="padding:14px 16px 16px">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('gantt',this)">Gantt</button>
+      <button class="tab" onclick="setTab('proyectos',this)">Proyectos</button>
     </div>
 
-    <div class="metrics" id="metrics"></div>
-
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:14px 16px 0">
-        <div class="tabs">
-          <button class="tab active" onclick="setTab('gantt',this)">Gantt</button>
-          <button class="tab" onclick="setTab('proyectos',this)">Proyectos</button>
-        </div>
+    <!-- GANTT -->
+    <div id="tab-gantt">
+      <div class="toolbar">
+        <select id="pfilt" onchange="rGantt()"><option value="all">Todos los proyectos</option></select>
+        <button class="btn" onclick="abrirModalProj(null)">+ Proyecto</button>
+        <button class="btn" onclick="abrirModalTarea(null)">+ Tarea</button>
       </div>
+      <div id="gantt-cont"></div>
+    </div>
 
-      <div style="padding:0 16px 16px">
-        <!-- GANTT TAB -->
-        <div id="tab-gantt">
-          <div class="toolbar">
-            <select id="proj-filter" onchange="renderGantt()">
-              <option value="all">Todos los proyectos</option>
-            </select>
-            <button class="btn" onclick="openModal('modal-proj')">+ Proyecto</button>
-            <button class="btn" onclick="openModal('modal-task')">+ Tarea</button>
-          </div>
-          <div id="gantt-container"></div>
-        </div>
-
-        <!-- PROYECTOS TAB -->
-        <div id="tab-proyectos" style="display:none">
-          <div class="toolbar">
-            <button class="btn primary" onclick="openModal('modal-proj')">+ Nuevo proyecto</button>
-          </div>
-          <div id="proj-list"></div>
-        </div>
+    <!-- PROYECTOS -->
+    <div id="tab-proyectos" style="display:none">
+      <div class="toolbar">
+        <button class="btn primary" onclick="abrirModalProj(null)">+ Nuevo proyecto</button>
       </div>
+      <div class="pcards" id="pcards"></div>
     </div>
   </div>
 </div>
 
-<!-- MODALES inline -->
-<div id="modal-proj" class="overlay" style="display:none">
+<!-- MODAL PROYECTO -->
+<div id="modal-proj" class="modal-wrap">
   <div class="modal">
-    <h3>Nuevo proyecto</h3>
-    <div class="form-row"><label>Nombre</label><input id="np-name" placeholder="Ej: Reportes Q3 2026"></div>
-    <div class="form-row"><label>Color</label>
-      <select id="np-color">
-        <option value="#3B8BD4">Azul</option>
-        <option value="#1D9E75">Verde</option>
-        <option value="#BA7517">Ámbar</option>
-        <option value="#D85A30">Coral</option>
-        <option value="#7F77DD">Morado</option>
-        <option value="#D4537E">Rosa</option>
+    <h3 id="mp-title">Nuevo proyecto</h3>
+    <div class="fr"><label>Nombre del proyecto</label><input id="mp-name" placeholder="Ej: Reportes Financieros Q3"></div>
+    <div class="fr"><label>Color</label>
+      <select id="mp-color">
+        <option value="#3B8BD4">Azul</option><option value="#1D9E75">Verde</option>
+        <option value="#BA7517">Ámbar</option><option value="#D85A30">Coral</option>
+        <option value="#7F77DD">Morado</option><option value="#D4537E">Rosa</option>
         <option value="#888780">Gris</option>
       </select>
     </div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('modal-proj')">Cancelar</button>
-      <button class="btn primary" onclick="saveProject()">Guardar</button>
+    <div class="fr"><label>Descripción (opcional)</label><input id="mp-desc" placeholder="Ej: Reportes financieros del tercer trimestre"></div>
+    <div class="mbtns">
+      <button class="btn" onclick="cerrarModal('modal-proj')">Cancelar</button>
+      <button class="btn danger sm" id="mp-del" style="display:none" onclick="eliminarProj()">Eliminar proyecto</button>
+      <button class="btn primary" onclick="guardarProj()">Guardar</button>
     </div>
   </div>
 </div>
 
-<div id="modal-task" class="overlay" style="display:none">
+<!-- MODAL TAREA -->
+<div id="modal-tarea" class="modal-wrap">
   <div class="modal">
-    <h3 id="modal-task-title">Nueva tarea</h3>
-    <div class="form-row"><label>Proyecto</label><select id="nt-proj"></select></div>
-    <div class="form-row"><label>Nombre de la tarea</label><input id="nt-name" placeholder="Ej: Extracción de datos"></div>
-    <div class="form-half">
-      <div class="form-row"><label>Semana inicio</label><input id="nt-start" type="number" min="1" max="24" value="1"></div>
-      <div class="form-row"><label>Semana fin</label><input id="nt-end" type="number" min="1" max="24" value="3"></div>
+    <h3 id="mt-title">Nueva tarea</h3>
+    <div class="fr"><label>Proyecto</label><select id="mt-proj"></select></div>
+    <div class="fr"><label>Nombre de la tarea</label><input id="mt-name" placeholder="Ej: Extracción de datos"></div>
+    <div class="frow2">
+      <div class="fr"><label>Mes inicio</label>
+        <select id="mt-start">
+          <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+          <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="fr"><label>Mes fin</label>
+        <select id="mt-end">
+          <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+          <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
     </div>
-    <div class="form-row"><label>% Avance: <span id="nt-pct-display">0</span>%</label>
-      <input type="range" id="nt-pct" min="0" max="100" value="0" step="5" style="width:100%;margin-top:6px"
-        oninput="document.getElementById('nt-pct-display').textContent=this.value">
+    <div class="fr">
+      <label>% Avance: <span id="mt-pct-lbl">0</span>%</label>
+      <input type="range" id="mt-pct" min="0" max="100" step="5" value="0" style="margin-top:6px"
+        oninput="document.getElementById('mt-pct-lbl').textContent=this.value">
     </div>
-    <div class="form-row"><label>¿Está en la ruta crítica?</label>
-      <select id="nt-critical"><option value="false">No</option><option value="true">Sí — Ruta crítica</option></select>
+    <div class="fr">
+      <label>Depende de (predecesoras — define la ruta crítica automáticamente)</label>
+      <div class="dep-list" id="dep-list"></div>
     </div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('modal-task')">Cancelar</button>
-      <button class="btn danger small" id="btn-delete-task" style="display:none" onclick="deleteTask()">Eliminar</button>
-      <button class="btn primary" onclick="saveTask()">Guardar</button>
+    <div class="mbtns">
+      <button class="btn" onclick="cerrarModal('modal-tarea')">Cancelar</button>
+      <button class="btn danger sm" id="mt-del" style="display:none" onclick="eliminarTarea()">Eliminar</button>
+      <button class="btn primary" onclick="guardarTarea()">Guardar</button>
     </div>
   </div>
 </div>
 
 <script>
-const WEEKS = 16;
-let sheetUrl = '', localMode = false, syncTimer = null;
-let editingTaskId = null;
-let expandedProjs = new Set();
-let currentTab = 'gantt';
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES_L=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS=12;
+const COLORS=['#3B8BD4','#1D9E75','#BA7517','#D85A30','#7F77DD','#D4537E','#888780'];
 
-let S = { projects:[], tasks:[], nextProjId:1, nextTaskId:1, lastSaved:'', savedBy:'' };
+let gsUrl='',local=false,timer=null;
+let editProjId=null,editTaskId=null,tab='gantt';
+let expanded=new Set();
 
-// ── Persistence ─────────────────────────────────────────────────────────────
-function savedSheetUrl() { try { return localStorage.getItem('gsUrl') || ''; } catch(e){return '';} }
-function rememberUrl(u) { try { localStorage.setItem('gsUrl', u); } catch(e){} }
+let S={projects:[],tasks:[],npid:1,ntid:1,saved:''};
 
-function setStatus(color, text) {
-  document.getElementById('s-dot').className = 'dot ' + color;
-  document.getElementById('s-text').textContent = text;
+// ── Ruta Crítica (CPM simplificado) ─────────────────────────────────────────
+function calcRC(){
+  // Forward pass: earliest finish = max(fin de predecesoras, inicio propio)
+  const ef={}, es={};
+  // Topological sort by dependencies
+  const sorted=topoSort(S.tasks);
+  for(const t of sorted){
+    const deps=(t.deps||[]).map(id=>S.tasks.find(x=>x.id===id)).filter(Boolean);
+    const maxDepEnd=deps.length?Math.max(...deps.map(d=>ef[d.id]||d.end)):0;
+    es[t.id]=Math.max(t.start, maxDepEnd+0.01>t.start?maxDepEnd:t.start-1);
+    ef[t.id]=t.end;
+  }
+  // Backward pass: latest start
+  const ls={}, lf={};
+  const allEnds=S.tasks.map(t=>t.end);
+  const projEnd=allEnds.length?Math.max(...allEnds):MONTHS;
+  for(const t of [...sorted].reverse()){
+    const successors=S.tasks.filter(x=>(x.deps||[]).includes(t.id));
+    if(!successors.length){lf[t.id]=projEnd;}
+    else{lf[t.id]=Math.min(...successors.map(s=>ls[s.id]));}
+    ls[t.id]=lf[t.id]-(t.end-t.start);
+  }
+  // Critical: float = ls - es = 0
+  for(const t of S.tasks){
+    const float=(ls[t.id]||0)-(es[t.id]||t.start);
+    t.critical=Math.abs(float)<0.5;
+  }
 }
 
-async function loadFromSheet() {
-  if (localMode) return;
-  try {
-    setStatus('yellow', 'Sincronizando...');
-    const r = await fetch(sheetUrl + '?t=' + Date.now());
-    const txt = await r.text();
-    if (txt && txt.trim() !== '{}' && txt.trim() !== '') {
-      const loaded = JSON.parse(txt);
-      if (loaded && loaded.projects) S = loaded;
-    } else {
-      await saveToSheet(false);
+function topoSort(tasks){
+  const visited=new Set(),result=[],ids=new Set(tasks.map(t=>t.id));
+  function visit(t){
+    if(visited.has(t.id))return;
+    visited.add(t.id);
+    for(const depId of(t.deps||[])){
+      const dep=tasks.find(x=>x.id===depId);
+      if(dep)visit(dep);
     }
-    const t = S.lastSaved ? new Date(S.lastSaved).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '';
-    setStatus('green', 'Sincronizado' + (t ? ' ' + t : '') + (S.savedBy ? ' · ' + S.savedBy : ''));
-    S.projects.forEach(p => expandedProjs.add(p.id));
+    result.push(t);
+  }
+  tasks.forEach(t=>visit(t));
+  return result;
+}
+
+// ── Sync ─────────────────────────────────────────────────────────────────────
+function setSt(c,txt){document.getElementById('sdot').className='dot '+c;document.getElementById('stxt').textContent=txt;}
+
+function tryGetUrl(){try{return localStorage.getItem('gsUrl')||'';}catch(e){return '';}}
+function saveUrl(u){try{localStorage.setItem('gsUrl',u);}catch(e){}}
+
+async function conectar(){
+  const u=document.getElementById('gs-url').value.trim();
+  if(!u.startsWith('https://')){alert('Pega una URL válida de Apps Script');return;}
+  gsUrl=u;local=false;saveUrl(u);
+  mostrarApp();setSt('y','Conectando...');
+  await cargar();
+  timer=setInterval(cargar,20000);
+}
+
+function modoLocal(){
+  local=true;
+  try{const s=localStorage.getItem('gp_data');if(s){S=JSON.parse(s);}}catch(e){}
+  if(!S.projects.length)S=demo();
+  calcRC();S.projects.forEach(p=>expanded.add(p.id));
+  mostrarApp();setSt('g','Modo local');render();
+}
+
+function mostrarApp(){
+  document.getElementById('setup').style.display='none';
+  document.getElementById('app').style.display='';
+}
+
+function desconectar(){
+  clearInterval(timer);gsUrl='';local=false;
+  document.getElementById('setup').style.display='';
+  document.getElementById('app').style.display='none';
+}
+
+async function cargar(){
+  if(local)return;
+  try{
+    setSt('y','Sincronizando...');
+    const r=await fetch(gsUrl+'?t='+Date.now());
+    const txt=await r.text();
+    if(txt&&txt.trim()!=='{}'&&txt.trim()!==''){
+      const d=JSON.parse(txt);
+      if(d&&d.projects){S=d;}
+    }else{await guardar(false);}
+    if(!S.projects.length)S=demo();
+    calcRC();S.projects.forEach(p=>expanded.add(p.id));
+    const t=S.saved?new Date(S.saved).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'';
+    setSt('g','Sincronizado'+(t?' '+t:''));
     render();
-  } catch(e) {
-    setStatus('red', 'Sin conexión — verifica la URL del script');
+  }catch(e){setSt('r','Error de conexión');}
+}
+
+async function guardar(doR=true){
+  calcRC();
+  S.saved=new Date().toISOString();
+  if(local){
+    try{localStorage.setItem('gp_data',JSON.stringify(S));}catch(e){}
+    setSt('g','Guardado localmente');if(doR)render();return;
   }
+  try{
+    setSt('y','Guardando...');
+    await fetch(gsUrl,{method:'POST',body:JSON.stringify(S),headers:{'Content-Type':'text/plain'}});
+    const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+    setSt('g','Guardado '+t);if(doR)render();
+  }catch(e){setSt('r','Error al guardar');}
 }
 
-async function saveToSheet(doRender=true) {
-  S.lastSaved = new Date().toISOString();
-  if (localMode) {
-    try { localStorage.setItem('gp_local', JSON.stringify(S)); } catch(e){}
-    if (doRender) render();
-    setStatus('green', 'Guardado localmente');
-    return;
-  }
-  try {
-    setStatus('yellow', 'Guardando...');
-    await fetch(sheetUrl, { method:'POST', body: JSON.stringify(S), headers:{'Content-Type':'text/plain'} });
-    const t = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-    setStatus('green', 'Guardado a las ' + t);
-    if (doRender) render();
-  } catch(e) { setStatus('red', 'Error al guardar'); }
+function sync(){if(local)render();else cargar();}
+
+function exportar(){
+  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='proyectos_backup.json';a.click();
 }
 
-function syncNow() { if (localMode) { render(); } else { loadFromSheet(); } }
-
-function connectSheet() {
-  const url = document.getElementById('sheet-url').value.trim();
-  if (!url || !url.startsWith('https://')) { alert('Pega una URL válida de Apps Script (empieza con https://)'); return; }
-  sheetUrl = url; localMode = false;
-  rememberUrl(url);
-  showApp();
-  loadFromSheet();
-  syncTimer = setInterval(loadFromSheet, 20000);
-}
-
-function useLocal() {
-  localMode = true; sheetUrl = '';
-  try {
-    const saved = localStorage.getItem('gp_local');
-    if (saved) S = JSON.parse(saved);
-  } catch(e) {}
-  if (!S.projects.length) seedDemo();
-  S.projects.forEach(p => expandedProjs.add(p.id));
-  showApp();
-  setStatus('green', 'Modo local — datos guardados en este navegador');
-  render();
-}
-
-function disconnect() {
-  clearInterval(syncTimer);
-  sheetUrl = ''; localMode = false;
-  document.getElementById('setup-card').style.display = '';
-  document.getElementById('main-app').style.display = 'none';
-}
-
-function showApp() {
-  document.getElementById('setup-card').style.display = 'none';
-  document.getElementById('main-app').style.display = '';
-}
-
-function seedDemo() {
-  S = {
-    projects: [
-      {id:1, name:'Reportes Financieros Q3', color:'#3B8BD4'},
-      {id:2, name:'Dashboard de Ventas', color:'#1D9E75'},
-      {id:3, name:'Auditoría Anual', color:'#D85A30'}
-    ],
-    tasks: [
-      {id:1, proj:1, name:'Definición de alcance', start:1, end:2, pct:100, critical:true},
-      {id:2, proj:1, name:'Extracción de datos', start:2, end:5, pct:75, critical:true},
-      {id:3, proj:1, name:'Diseño de reportes', start:4, end:8, pct:40, critical:false},
-      {id:4, proj:1, name:'Validación', start:7, end:10, pct:0, critical:true},
-      {id:5, proj:1, name:'Entrega final', start:10, end:11, pct:0, critical:true},
-      {id:6, proj:2, name:'Requerimientos', start:1, end:3, pct:100, critical:true},
-      {id:7, proj:2, name:'Diseño UI', start:2, end:6, pct:65, critical:false},
-      {id:8, proj:2, name:'Integración de datos', start:5, end:9, pct:20, critical:true},
-      {id:9, proj:2, name:'Pruebas', start:8, end:11, pct:0, critical:true},
-      {id:10, proj:3, name:'Revisión documental', start:1, end:4, pct:90, critical:false},
-      {id:11, proj:3, name:'Entrevistas', start:3, end:6, pct:45, critical:true},
-      {id:12, proj:3, name:'Informe borrador', start:5, end:9, pct:10, critical:true},
-      {id:13, proj:3, name:'Aprobación final', start:9, end:11, pct:0, critical:true}
-    ],
-    nextProjId: 4, nextTaskId: 14, lastSaved: '', savedBy: ''
-  };
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function projPct(projId) {
-  const t = S.tasks.filter(t => t.proj === projId);
-  return t.length ? Math.round(t.reduce((s,t) => s+t.pct, 0) / t.length) : 0;
-}
-
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-function setTab(tab, el) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-gantt').style.display = tab === 'gantt' ? '' : 'none';
-  document.getElementById('tab-proyectos').style.display = tab === 'proyectos' ? '' : 'none';
-  render();
-}
-
-function exportJSON() {
-  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'proyectos_backup.json'; a.click();
-}
-
-function copyScript() {
-  const txt = document.getElementById('script-content').textContent;
-  navigator.clipboard.writeText(txt).then(() => {
-    const btn = event.target; btn.textContent = '✓ Copiado';
-    setTimeout(() => btn.textContent = 'Copiar script', 2000);
+function copyScript(){
+  navigator.clipboard.writeText(document.getElementById('scriptbox').textContent).then(()=>{
+    const b=event.target;b.textContent='✓ Copiado';setTimeout(()=>b.textContent='Copiar script',2000);
   });
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
-function render() {
-  renderMetrics();
-  updateProjFilter();
-  if (currentTab === 'gantt') renderGantt();
-  else renderProjects();
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function pp(pid){const t=S.tasks.filter(t=>t.proj===pid);return t.length?Math.round(t.reduce((s,t)=>s+t.pct,0)/t.length):0;}
+function mesNombre(m){return MESES[(m-1+MONTHS)%MONTHS];}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  renderMetrics();updFilt();
+  if(tab==='gantt')rGantt();else rProyectos();
 }
 
-function renderMetrics() {
-  const total = S.tasks.length;
-  const done = S.tasks.filter(t => t.pct === 100).length;
-  const rc = S.tasks.filter(t => t.critical).length;
-  const avg = total ? Math.round(S.tasks.reduce((s,t) => s+t.pct, 0) / total) : 0;
-  document.getElementById('metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Proyectos</div><div class="metric-value">${S.projects.length}</div></div>
-    <div class="metric"><div class="metric-label">Tareas totales</div><div class="metric-value">${total}</div></div>
-    <div class="metric"><div class="metric-label">Completadas</div><div class="metric-value" style="color:var(--success-text)">${done}</div></div>
-    <div class="metric"><div class="metric-label">Ruta crítica</div><div class="metric-value" style="color:#B03A2E">${rc}</div></div>
-    <div class="metric"><div class="metric-label">Avance global</div><div class="metric-value">${avg}%</div></div>
-  `;
+function renderMetrics(){
+  const tot=S.tasks.length,done=S.tasks.filter(t=>t.pct===100).length;
+  const rc=S.tasks.filter(t=>t.critical).length;
+  const avg=tot?Math.round(S.tasks.reduce((s,t)=>s+t.pct,0)/tot):0;
+  document.getElementById('metrics').innerHTML=
+    `<div class="metric"><div class="metric-lbl">Proyectos</div><div class="metric-val">${S.projects.length}</div></div>`+
+    `<div class="metric"><div class="metric-lbl">Tareas</div><div class="metric-val">${tot}</div></div>`+
+    `<div class="metric"><div class="metric-lbl">Completadas</div><div class="metric-val" style="color:var(--success-text)">${done}</div></div>`+
+    `<div class="metric"><div class="metric-lbl">Ruta crítica</div><div class="metric-val" style="color:var(--rc)">${rc}</div></div>`+
+    `<div class="metric"><div class="metric-lbl">Avance global</div><div class="metric-val">${avg}%</div></div>`;
 }
 
-function updateProjFilter() {
-  const sel = document.getElementById('proj-filter');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="all">Todos los proyectos</option>' +
-    S.projects.map(p => `<option value="${p.id}"${cur==p.id?' selected':''}>${p.name}</option>`).join('');
+function updFilt(){
+  const s=document.getElementById('pfilt'),cur=s.value;
+  s.innerHTML='<option value="all">Todos los proyectos</option>'+
+    S.projects.map(p=>`<option value="${p.id}"${cur==p.id?' selected':''}>${p.name}</option>`).join('');
 }
 
-function renderGantt() {
-  const filterVal = document.getElementById('proj-filter').value;
-  const projs = filterVal === 'all' ? S.projects : S.projects.filter(p => p.id === parseInt(filterVal));
-  const gc = document.getElementById('gantt-container');
-  if (!S.projects.length) { gc.innerHTML = '<div class="empty">Agrega tu primer proyecto con "+ Proyecto".</div>'; return; }
+function rGantt(){
+  const fv=document.getElementById('pfilt').value;
+  const projs=fv==='all'?S.projects:S.projects.filter(p=>p.id===parseInt(fv));
+  const gc=document.getElementById('gantt-cont');
+  if(!S.projects.length){gc.innerHTML='<div class="empty">Agrega tu primer proyecto con "+ Proyecto".</div>';return;}
 
-  let h = `<div class="gantt-wrap"><div class="gantt-inner">`;
-  h += `<div class="gantt-head"><div class="g-label">Tarea</div><div class="g-weeks">`;
-  for (let w=1;w<=WEEKS;w++) h += `<div class="g-week">S${w}</div>`;
-  h += `</div></div>`;
+  let h=`<div class="gantt-scroll"><div class="gantt-inner">`;
+  h+=`<div class="gantt-head"><div class="gh-lbl">Tarea / Mes inicio → fin</div><div class="gh-months">`;
+  for(let m=1;m<=MONTHS;m++)h+=`<div class="gh-month">${mesNombre(m)}</div>`;
+  h+=`</div></div>`;
 
-  for (const proj of projs) {
-    const tasks = S.tasks.filter(t => t.proj === proj.id);
-    const pct = projPct(proj.id);
-    const open = expandedProjs.has(proj.id);
-    h += `<div class="gantt-row proj-row" onclick="toggleProj(${proj.id})">
-      <div class="task-label">
-        <div class="proj-dot" style="background:${proj.color}"></div>
-        <span class="task-name" style="font-weight:500">${proj.name}</span>
-        <span class="task-pct">${pct}%</span>
-        <span class="chevron${open?' open':''}">▶</span>
-      </div>
-      <div class="g-bars">`;
-    for (let w=0;w<WEEKS;w++) h += `<div class="g-line" style="left:${(w/WEEKS)*100}%"></div>`;
-    if (tasks.length) {
-      const ms = Math.min(...tasks.map(t=>t.start)), me = Math.max(...tasks.map(t=>t.end));
-      const l = ((ms-1)/WEEKS)*100, w2 = ((me-ms)/WEEKS)*100;
-      h += `<div class="g-bar" style="left:${l}%;width:${w2}%;background:${proj.color}22;border:0.5px solid ${proj.color}55;cursor:default">
-        <div class="g-bar-fill" style="width:${pct}%;background:${proj.color}66"></div></div>`;
+  for(const p of projs){
+    const tasks=S.tasks.filter(t=>t.proj===p.id);
+    const pct=pp(p.id);const open=expanded.has(p.id);
+    h+=`<div class="grow prow" onclick="toggleProj(${p.id})">`;
+    h+=`<div class="tlbl"><div class="pdot" style="background:${p.color}"></div><span class="tname" style="font-weight:500">${p.name}</span><span class="tpct">${pct}%</span><span class="chev${open?' open':''}">▶</span></div>`;
+    h+=`<div class="gbars">`;
+    for(let m=0;m<MONTHS;m++)h+=`<div class="gline" style="left:${(m/MONTHS)*100}%"></div>`;
+    if(tasks.length){
+      const ms=Math.min(...tasks.map(t=>t.start)),me=Math.max(...tasks.map(t=>t.end));
+      const l=((ms-1)/MONTHS)*100,w=((me-ms)/MONTHS)*100;
+      h+=`<div class="gbar" style="left:${l}%;width:${Math.max(w,2)}%;background:${p.color}22;border:0.5px solid ${p.color}55;cursor:default">`;
+      h+=`<div class="gbar-fill" style="width:${pct}%;background:${p.color}66"></div></div>`;
     }
-    h += `</div></div>`;
+    h+=`</div></div>`;
 
-    if (open) {
-      for (const task of tasks) {
-        const l = ((task.start-1)/WEEKS)*100;
-        const w2 = Math.max(((task.end-task.start)/WEEKS)*100, 1);
-        h += `<div class="gantt-row${task.critical?' crit':''}">
-          <div class="task-label" style="padding-left:20px">
-            <span class="task-name" title="${task.name}">${task.name}</span>
-            ${task.critical?'<span class="rc-badge">RC</span>':''}
-            <span class="task-pct">${task.pct}%</span>
-          </div>
-          <div class="g-bars">`;
-        for (let w=0;w<WEEKS;w++) h += `<div class="g-line" style="left:${(w/WEEKS)*100}%"></div>`;
-        h += `<div class="g-bar${task.critical?' crit':''}" title="Clic para editar — ${task.name}"
-            style="left:${l}%;width:${w2}%;background:${proj.color}28;border:0.5px solid ${proj.color}"
-            onclick="openEditTask(${task.id})">
-            <div class="g-bar-fill" style="width:${task.pct}%;background:${proj.color}"></div>
-          </div>`;
-        h += `</div></div>`;
+    if(open){
+      for(const t of tasks){
+        const l=((t.start-1)/MONTHS)*100;
+        const w=Math.max(((t.end-t.start)/MONTHS)*100,2);
+        const depNames=(t.deps||[]).map(id=>{const d=S.tasks.find(x=>x.id===id);return d?d.name:'';}).filter(Boolean);
+        h+=`<div class="grow${t.critical?' crit':''}">`;
+        h+=`<div class="tlbl" style="padding-left:18px">`;
+        h+=`<span class="tname" title="${t.name}${depNames.length?'\nDepende de: '+depNames.join(', '):''}">${t.name}</span>`;
+        if(t.critical)h+=`<span class="rcbadge">RC</span>`;
+        h+=`<span class="tpct">${t.pct}%</span>`;
+        h+=`</div><div class="gbars">`;
+        for(let m=0;m<MONTHS;m++)h+=`<div class="gline" style="left:${(m/MONTHS)*100}%"></div>`;
+        h+=`<div class="gbar${t.critical?' isrc':''}" title="${mesNombre(t.start)}→${mesNombre(t.end)} | Clic para editar"
+          style="left:${l}%;width:${w}%;background:${p.color}28;border:0.5px solid ${p.color}"
+          onclick="abrirModalTarea(${t.id})">`;
+        h+=`<div class="gbar-fill" style="width:${t.pct}%;background:${p.color}"></div></div>`;
+        h+=`</div></div>`;
       }
     }
   }
-  h += `</div></div>`;
-  gc.innerHTML = h;
+  h+=`</div></div>`;
+  gc.innerHTML=h;
 }
 
-function renderProjects() {
-  const pl = document.getElementById('proj-list');
-  if (!S.projects.length) { pl.innerHTML = '<div class="empty">Sin proyectos aún.</div>'; return; }
-  pl.innerHTML = S.projects.map(p => {
-    const pct = projPct(p.id);
-    const tasks = S.tasks.filter(t => t.proj === p.id);
-    const rc = tasks.filter(t => t.critical).length;
-    const taskRows = tasks.map(t => `
-      <div class="task-row">
-        <span style="flex:1;color:${t.critical?'#B03A2E':'var(--text)'}">${t.name}${t.critical?' ·RC':''}</span>
-        <input type="range" min="0" max="100" step="5" value="${t.pct}"
-          oninput="this.nextElementSibling.textContent=this.value+'%'"
-          onchange="quickUpdatePct(${t.id}, parseInt(this.value))">
-        <span class="task-row-pct">${t.pct}%</span>
-        <button class="btn small" onclick="openEditTask(${t.id})" style="padding:3px 8px">✎</button>
+function rProyectos(){
+  const pc=document.getElementById('pcards');
+  if(!S.projects.length){pc.innerHTML='<div class="empty">Sin proyectos aún.</div>';return;}
+  pc.innerHTML=S.projects.map(p=>{
+    const tasks=S.tasks.filter(t=>t.proj===p.id);
+    const pct=pp(p.id);const rc=tasks.filter(t=>t.critical).length;
+    const trows=tasks.map(t=>`
+      <div class="titem${t.critical?' isrc':''}">
+        <span class="titem-name" title="${t.name}">${t.name}</span>
+        ${t.critical?`<span class="rcbadge">RC</span>`:''}
+        <span class="titem-info">${mesNombre(t.start)}→${mesNombre(t.end)}</span>
+        <div class="range-wrap">
+          <input type="range" min="0" max="100" step="5" value="${t.pct}"
+            oninput="this.nextElementSibling.textContent=this.value+'%'"
+            onchange="qPct(${t.id},parseInt(this.value))">
+          <span class="range-lbl">${t.pct}%</span>
+        </div>
+        <button class="btn sm" onclick="abrirModalTarea(${t.id})" title="Editar tarea">✎</button>
       </div>`).join('');
-    return `<div class="proj-card">
-      <div class="proj-card-header">
-        <div class="proj-dot" style="background:${p.color}"></div>
-        <span class="proj-card-title">${p.name}</span>
-        <span class="proj-card-meta">${tasks.length} tareas · ${rc} RC · ${pct}%</span>
+    return `<div class="pcard">
+      <div class="pcard-hdr">
+        <div class="pdot" style="background:${p.color}"></div>
+        <span class="pcard-title">${p.name}</span>
+        <span class="pcard-meta">${tasks.length} tareas · ${rc} RC · ${pct}%</span>
+        <div class="pcard-actions">
+          <button class="btn sm" onclick="abrirModalProj(${p.id})" title="Editar proyecto">✎ Editar</button>
+        </div>
       </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${p.color}"></div></div>
-      <div class="task-rows">${taskRows || '<span style="font-size:12px;color:var(--text2)">Sin tareas — usa "+ Tarea" para agregar.</span>'}</div>
+      ${p.desc?`<div style="font-size:12px;color:var(--text2);padding:0 14px 8px">${p.desc}</div>`:''}
+      <div class="prog"><div class="prog-fill" style="width:${pct}%;background:${p.color}"></div></div>
+      <div class="tlist">${trows||'<span style="font-size:12px;color:var(--text2)">Sin tareas — agrega con "+ Tarea"</span>'}</div>
     </div>`;
   }).join('');
 }
 
-function toggleProj(id) {
-  if (expandedProjs.has(id)) expandedProjs.delete(id);
-  else expandedProjs.add(id);
-  renderGantt();
+function toggleProj(id){
+  if(expanded.has(id))expanded.delete(id);else expanded.add(id);
+  rGantt();
 }
 
-// ── CRUD ─────────────────────────────────────────────────────────────────────
-function openModal_proj() {
-  document.getElementById('np-name').value = '';
-  document.getElementById('modal-proj').style.display = 'flex';
-  setTimeout(() => document.getElementById('np-name').focus(), 60);
+function setTab(t,el){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-gantt').style.display=t==='gantt'?'':'none';
+  document.getElementById('tab-proyectos').style.display=t==='proyectos'?'':'none';
+  render();
 }
 
-function saveProject() {
-  const name = document.getElementById('np-name').value.trim();
-  if (!name) { alert('Escribe un nombre para el proyecto.'); return; }
-  const color = document.getElementById('np-color').value;
-  const id = S.nextProjId++;
-  S.projects.push({ id, name, color });
-  expandedProjs.add(id);
-  closeModal('modal-proj');
-  saveToSheet();
+// ── Modales ───────────────────────────────────────────────────────────────────
+function abrirModal(id){document.getElementById(id).classList.add('open');}
+function cerrarModal(id){document.getElementById(id).classList.remove('open');}
+
+function abrirModalProj(id){
+  editProjId=id;
+  const p=id?S.projects.find(x=>x.id===id):null;
+  document.getElementById('mp-title').textContent=p?'Editar proyecto':'Nuevo proyecto';
+  document.getElementById('mp-name').value=p?p.name:'';
+  document.getElementById('mp-color').value=p?p.color:'#3B8BD4';
+  document.getElementById('mp-desc').value=p?p.desc||'':'';
+  document.getElementById('mp-del').style.display=p?'':'none';
+  abrirModal('modal-proj');
+  setTimeout(()=>document.getElementById('mp-name').focus(),60);
 }
 
-function openModal(id) {
-  if (id === 'modal-proj') { openModal_proj(); return; }
-  if (id === 'modal-task') { openNewTask(); return; }
-  document.getElementById(id).style.display = 'flex';
-}
-
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-function openNewTask() {
-  editingTaskId = null;
-  document.getElementById('modal-task-title').textContent = 'Nueva tarea';
-  document.getElementById('btn-delete-task').style.display = 'none';
-  const ps = document.getElementById('nt-proj');
-  ps.innerHTML = S.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  const cur = document.getElementById('proj-filter').value;
-  if (cur !== 'all') ps.value = cur;
-  document.getElementById('nt-name').value = '';
-  document.getElementById('nt-start').value = 1;
-  document.getElementById('nt-end').value = 3;
-  document.getElementById('nt-pct').value = 0;
-  document.getElementById('nt-pct-display').textContent = '0';
-  document.getElementById('nt-critical').value = 'false';
-  document.getElementById('modal-task').style.display = 'flex';
-  setTimeout(() => document.getElementById('nt-name').focus(), 60);
-}
-
-function openEditTask(taskId) {
-  const task = S.tasks.find(t => t.id === taskId);
-  if (!task) return;
-  editingTaskId = taskId;
-  document.getElementById('modal-task-title').textContent = 'Editar: ' + task.name;
-  document.getElementById('btn-delete-task').style.display = '';
-  const ps = document.getElementById('nt-proj');
-  ps.innerHTML = S.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  ps.value = task.proj;
-  document.getElementById('nt-name').value = task.name;
-  document.getElementById('nt-start').value = task.start;
-  document.getElementById('nt-end').value = task.end;
-  document.getElementById('nt-pct').value = task.pct;
-  document.getElementById('nt-pct-display').textContent = task.pct;
-  document.getElementById('nt-critical').value = String(task.critical);
-  document.getElementById('modal-task').style.display = 'flex';
-}
-
-function saveTask() {
-  const name = document.getElementById('nt-name').value.trim();
-  if (!name) { alert('Escribe el nombre de la tarea.'); return; }
-  const proj = parseInt(document.getElementById('nt-proj').value);
-  const start = Math.max(1, Math.min(WEEKS, parseInt(document.getElementById('nt-start').value)||1));
-  const end = Math.max(start+1, Math.min(WEEKS, parseInt(document.getElementById('nt-end').value)||start+1));
-  const pct = Math.max(0, Math.min(100, parseInt(document.getElementById('nt-pct').value)||0));
-  const critical = document.getElementById('nt-critical').value === 'true';
-
-  if (editingTaskId) {
-    const task = S.tasks.find(t => t.id === editingTaskId);
-    if (task) Object.assign(task, { proj, name, start, end, pct, critical });
-  } else {
-    S.tasks.push({ id: S.nextTaskId++, proj, name, start, end, pct, critical });
+function guardarProj(){
+  const name=document.getElementById('mp-name').value.trim();
+  if(!name){alert('Escribe el nombre del proyecto');return;}
+  const color=document.getElementById('mp-color').value;
+  const desc=document.getElementById('mp-desc').value.trim();
+  if(editProjId){
+    const p=S.projects.find(x=>x.id===editProjId);
+    if(p)Object.assign(p,{name,color,desc});
+  }else{
+    const id=S.npid++;
+    S.projects.push({id,name,color,desc});
+    expanded.add(id);
   }
-  closeModal('modal-task');
-  saveToSheet();
+  cerrarModal('modal-proj');guardar();
 }
 
-function deleteTask() {
-  if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
-  S.tasks = S.tasks.filter(t => t.id !== editingTaskId);
-  closeModal('modal-task');
-  saveToSheet();
+function eliminarProj(){
+  if(!confirm('¿Eliminar este proyecto y todas sus tareas? Esta acción no se puede deshacer.'))return;
+  S.projects=S.projects.filter(p=>p.id!==editProjId);
+  S.tasks=S.tasks.filter(t=>t.proj!==editProjId);
+  cerrarModal('modal-proj');guardar();
 }
 
-function quickUpdatePct(taskId, pct) {
-  const task = S.tasks.find(t => t.id === taskId);
-  if (task) { task.pct = pct; saveToSheet(); }
+function abrirModalTarea(id){
+  editTaskId=id;
+  const t=id?S.tasks.find(x=>x.id===id):null;
+  document.getElementById('mt-title').textContent=t?'Editar tarea':'Nueva tarea';
+  document.getElementById('mt-del').style.display=t?'':'none';
+
+  // Proyectos
+  const ps=document.getElementById('mt-proj');
+  ps.innerHTML=S.projects.map(p=>`<option value="${p.id}"${t&&t.proj===p.id?' selected':''}>${p.name}</option>`).join('');
+  if(!t){
+    const cur=document.getElementById('pfilt').value;
+    if(cur!=='all')ps.value=cur;
+  }
+
+  document.getElementById('mt-name').value=t?t.name:'';
+  document.getElementById('mt-start').value=t?t.start:1;
+  document.getElementById('mt-end').value=t?t.end:3;
+  document.getElementById('mt-pct').value=t?t.pct:0;
+  document.getElementById('mt-pct-lbl').textContent=t?t.pct:0;
+
+  // Dependencias: mostrar todas las tareas excepto la actual
+  const dl=document.getElementById('dep-list');
+  const otherTasks=S.tasks.filter(x=>x.id!==id);
+  if(!otherTasks.length){
+    dl.innerHTML='<span style="font-size:12px;color:var(--text2)">Agrega más tareas para definir dependencias.</span>';
+  }else{
+    dl.innerHTML=otherTasks.map(x=>{
+      const checked=t&&(t.deps||[]).includes(x.id)?'checked':'';
+      const proj=S.projects.find(p=>p.id===x.proj);
+      return `<div class="dep-item">
+        <input type="checkbox" id="dep-${x.id}" value="${x.id}" ${checked}>
+        <label for="dep-${x.id}" style="flex:1;cursor:pointer">${x.name}</label>
+        <span style="font-size:11px;color:var(--text2)">${proj?proj.name:''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  abrirModal('modal-tarea');
+  setTimeout(()=>document.getElementById('mt-name').focus(),60);
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-(function init() {
-  const saved = savedSheetUrl();
-  if (saved) { document.getElementById('sheet-url').value = saved; }
+function guardarTarea(){
+  const name=document.getElementById('mt-name').value.trim();
+  if(!name){alert('Escribe el nombre de la tarea');return;}
+  const proj=parseInt(document.getElementById('mt-proj').value);
+  const start=parseInt(document.getElementById('mt-start').value)||1;
+  const end=Math.max(start,parseInt(document.getElementById('mt-end').value)||start);
+  const pct=parseInt(document.getElementById('mt-pct').value)||0;
+  const deps=[...document.querySelectorAll('#dep-list input[type=checkbox]:checked')].map(c=>parseInt(c.value));
+
+  if(editTaskId){
+    const t=S.tasks.find(x=>x.id===editTaskId);
+    if(t)Object.assign(t,{proj,name,start,end,pct,deps});
+  }else{
+    S.tasks.push({id:S.ntid++,proj,name,start,end,pct,deps,critical:false});
+  }
+  cerrarModal('modal-tarea');guardar();
+}
+
+function eliminarTarea(){
+  if(!confirm('¿Eliminar esta tarea?'))return;
+  // Quitar de dependencias de otras tareas
+  S.tasks=S.tasks.filter(t=>t.id!==editTaskId);
+  S.tasks.forEach(t=>{if(t.deps)t.deps=t.deps.filter(d=>d!==editTaskId);});
+  cerrarModal('modal-tarea');guardar();
+}
+
+function qPct(id,v){const t=S.tasks.find(x=>x.id===id);if(t){t.pct=v;guardar();}}
+
+// ── Demo data ──────────────────────────────────────────────────────────────────
+function demo(){
+  return{
+    projects:[
+      {id:1,name:'Reportes Financieros Q3',color:'#3B8BD4',desc:'Reportes del tercer trimestre'},
+      {id:2,name:'Dashboard de Ventas',color:'#1D9E75',desc:''},
+      {id:3,name:'Auditoría Anual',color:'#D85A30',desc:''}
+    ],
+    tasks:[
+      {id:1,proj:1,name:'Definición de alcance',start:1,end:2,pct:100,deps:[],critical:false},
+      {id:2,proj:1,name:'Extracción de datos',start:2,end:5,pct:75,deps:[1],critical:false},
+      {id:3,proj:1,name:'Diseño de reportes',start:3,end:7,pct:40,deps:[1],critical:false},
+      {id:4,proj:1,name:'Validación',start:7,end:9,pct:0,deps:[2,3],critical:false},
+      {id:5,proj:1,name:'Entrega final',start:9,end:10,pct:0,deps:[4],critical:false},
+      {id:6,proj:2,name:'Requerimientos',start:1,end:3,pct:100,deps:[],critical:false},
+      {id:7,proj:2,name:'Diseño UI',start:2,end:6,pct:65,deps:[6],critical:false},
+      {id:8,proj:2,name:'Integración datos',start:5,end:9,pct:20,deps:[6],critical:false},
+      {id:9,proj:2,name:'Pruebas',start:8,end:11,pct:0,deps:[7,8],critical:false},
+      {id:10,proj:3,name:'Revisión documental',start:1,end:4,pct:90,deps:[],critical:false},
+      {id:11,proj:3,name:'Entrevistas',start:3,end:6,pct:45,deps:[10],critical:false},
+      {id:12,proj:3,name:'Informe borrador',start:5,end:9,pct:10,deps:[11],critical:false},
+      {id:13,proj:3,name:'Aprobación',start:9,end:11,pct:0,deps:[12],critical:false}
+    ],
+    npid:4,ntid:14,saved:''
+  };
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+(function(){
+  const u=tryGetUrl();
+  if(u)document.getElementById('gs-url').value=u;
 })();
 </script>
 </body>
