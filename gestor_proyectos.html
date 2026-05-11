@@ -118,7 +118,7 @@
   .alt-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text2); }
 
   /* Modal */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .overlay { background: rgba(0,0,0,0.45); display: flex; align-items: flex-start; justify-content: center; padding-top: 40px; min-height: 380px; border-radius: var(--radius-lg); margin-bottom: 16px; }
   .modal { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 22px; width: 340px; max-width: 95vw; }
   .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
   .form-row { margin-bottom: 12px; }
@@ -226,8 +226,8 @@ function doPost(e){
   </div>
 </div>
 
-<!-- MODAL: Proyecto -->
-<div id="modal-proj" class="overlay" style="display:none" onclick="if(event.target===this)closeModal('modal-proj')">
+<!-- MODALES inline -->
+<div id="modal-proj" class="overlay" style="display:none">
   <div class="modal">
     <h3>Nuevo proyecto</h3>
     <div class="form-row"><label>Nombre</label><input id="np-name" placeholder="Ej: Reportes Q3 2026"></div>
@@ -249,8 +249,7 @@ function doPost(e){
   </div>
 </div>
 
-<!-- MODAL: Tarea -->
-<div id="modal-task" class="overlay" style="display:none" onclick="if(event.target===this)closeModal('modal-task')">
+<div id="modal-task" class="overlay" style="display:none">
   <div class="modal">
     <h3 id="modal-task-title">Nueva tarea</h3>
     <div class="form-row"><label>Proyecto</label><select id="nt-proj"></select></div>
@@ -548,7 +547,7 @@ function toggleProj(id) {
 // ── CRUD ─────────────────────────────────────────────────────────────────────
 function openModal_proj() {
   document.getElementById('np-name').value = '';
-  openModal('modal-proj');
+  document.getElementById('modal-proj').style.display = 'flex';
   setTimeout(() => document.getElementById('np-name').focus(), 60);
 }
 
@@ -568,6 +567,8 @@ function openModal(id) {
   if (id === 'modal-task') { openNewTask(); return; }
   document.getElementById(id).style.display = 'flex';
 }
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 function openNewTask() {
   editingTaskId = null;
